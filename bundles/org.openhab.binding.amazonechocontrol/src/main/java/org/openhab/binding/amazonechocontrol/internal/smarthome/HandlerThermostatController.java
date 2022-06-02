@@ -106,9 +106,10 @@ public class HandlerThermostatController extends HandlerBase {
     @Override
     public void updateChannels(String interfaceName, List<JsonObject> stateList, UpdateChannelResult result) {
         QuantityType<Temperature> temperatureValue = null;
+        StringType operationValue = null;
         for (JsonObject state : stateList) {
+            JsonObject value = state.get("value").getAsJsonObject();
             if (TARGET_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
-                JsonObject value = state.get("value").getAsJsonObject();
                 // For groups take the first
                 if (temperatureValue == null) {
                     float temperature = value.get("value").getAsFloat();
@@ -122,7 +123,6 @@ public class HandlerThermostatController extends HandlerBase {
                 updateState(TARGET_SETPOINT.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
             }
             if (LOWER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
-                JsonObject value = state.get("value").getAsJsonObject();
                 // For groups take the first
                 if (temperatureValue == null) {
                     float temperature = value.get("value").getAsFloat();
@@ -136,7 +136,6 @@ public class HandlerThermostatController extends HandlerBase {
                 updateState(LOWER_SETPOINT.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
             }
             if (UPPER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
-                JsonObject value = state.get("value").getAsJsonObject();
                 // For groups take the first
                 if (temperatureValue == null) {
                     float temperature = value.get("value").getAsFloat();
@@ -150,27 +149,27 @@ public class HandlerThermostatController extends HandlerBase {
                 updateState(UPPER_SETPOINT.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
             }
             if (COOLER_OPERATION.propertyName.equals(state.get("name").getAsString())) {
-                JsonObject value = state.get("value").getAsJsonObject();
                 // For groups take the first
-                String operationValue = value.get("value").getAsString().toUpperCase();
+                String operation = value.get("value").getAsString().toUpperCase();
+                operationValue = new StringType(operation);
                 updateState(COOLER_OPERATION.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
             }
             if (FAN_OPERATION.propertyName.equals(state.get("name").getAsString())) {
-                JsonObject value = state.get("value").getAsJsonObject();
                 // For groups take the first
-                String operationValue = value.get("value").getAsString().toUpperCase();
+                String operation = value.get("value").getAsString().toUpperCase();
+                operationValue = new StringType(operation);
                 updateState(FAN_OPERATION.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
             }
             if (THERMOSTAT_MODE.propertyName.equals(state.get("name").getAsString())) {
-                JsonObject value = state.get("value").getAsJsonObject();
                 // For groups take the first
-                String operationValue = value.get("value").getAsString().toUpperCase();
+                String operation = value.get("value").getAsString().toUpperCase();
+                operationValue = new StringType(operation);
                 updateState(THERMOSTAT_MODE.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
             }
             if (CONNECTIVITY.propertyName.equals(state.get("name").getAsString())) {
-                JsonObject value = state.get("value").getAsJsonObject();
                 // For groups take the first
-                String operationValue = value.get("value").getAsString().toUpperCase();
+                String operation = value.get("value").getAsString().toUpperCase();
+                operationValue = new StringType(operation);
                 updateState(CONNECTIVITY.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
             }
         }
@@ -200,22 +199,6 @@ public class HandlerThermostatController extends HandlerBase {
             if (containsCapabilityProperty(capabilities, UPPER_SETPOINT.propertyName)) {
                 if (command instanceof QuantityType) {
                     connection.smartHomeCommand(entityId, "setUpperSetpoint", "upperSetpoint", command);
-                    return true;
-                }
-            }
-        }
-        if (channelId.equals(COOLER_OPERATION.channelId)) {
-            if (containsCapabilityProperty(capabilities, COOLER_OPERATION.propertyName)) {
-                if (command instanceof StringType) {
-                    connection.smartHomeCommand(entityId, "setcoolerOperation", "coolerOperation", command);
-                    return true;
-                }
-            }
-        }
-        if (channelId.equals(FAN_OPERATION.channelId)) {
-            if (containsCapabilityProperty(capabilities, FAN_OPERATION.propertyName)) {
-                if (command instanceof StringType) {
-                    connection.smartHomeCommand(entityId, "setFanOperation", "fanOperation", command);
                     return true;
                 }
             }

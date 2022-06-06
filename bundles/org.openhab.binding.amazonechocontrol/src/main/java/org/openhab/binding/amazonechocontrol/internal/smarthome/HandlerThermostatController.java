@@ -33,6 +33,8 @@ import org.openhab.core.library.unit.SIUnits;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.StateDescription;
 import org.openhab.core.types.UnDefType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 
@@ -43,6 +45,8 @@ import com.google.gson.JsonObject;
  */
 @NonNullByDefault
 public class HandlerThermostatController extends HandlerBase {
+    // Logger
+    private final Logger logger = LoggerFactory.getLogger(HandlerThermostatController.class);
     // Interface
     public static final String INTERFACE = "Alexa.ThermostatController";
     // Channel definitions
@@ -55,17 +59,8 @@ public class HandlerThermostatController extends HandlerBase {
     private static final ChannelInfo UPPER_SETPOINT = new ChannelInfo("upperSetpoint" /* propertyName */ ,
             "upperSetpoint" /* ChannelId */, CHANNEL_TYPE_UPPERSETPOINT /* Channel Type */ ,
             ITEM_TYPE_NUMBER_TEMPERATURE /* Item Type */);
-    private static final ChannelInfo COOLER_OPERATION = new ChannelInfo("coolerOperation" /* propertyName */ ,
-            "coolerOperation" /* ChannelId */, CHANNEL_TYPE_COOLEROPERATION /* Channel Type */ ,
-            ITEM_TYPE_STRING /* Item Type */);
-    private static final ChannelInfo FAN_OPERATION = new ChannelInfo("fanOperation" /* propertyName */ ,
-            "fanOperation" /* ChannelId */, CHANNEL_TYPE_FANOPERATION /* Channel Type */ ,
-            ITEM_TYPE_STRING /* Item Type */);
     private static final ChannelInfo THERMOSTAT_MODE = new ChannelInfo("thermostatMode" /* propertyName */ ,
             "thermostatMode" /* ChannelId */, CHANNEL_TYPE_THERMOSTATMODE /* Channel Type */ ,
-            ITEM_TYPE_STRING /* Item Type */);
-    private static final ChannelInfo CONNECTIVITY = new ChannelInfo("connectivity" /* propertyName */ ,
-            "connectivity" /* ChannelId */, CHANNEL_TYPE_CONNECTIVITY /* Channel Type */ ,
             ITEM_TYPE_STRING /* Item Type */);
 
     public HandlerThermostatController(SmartHomeDeviceHandler smartHomeDeviceHandler) {
@@ -88,30 +83,22 @@ public class HandlerThermostatController extends HandlerBase {
         if (UPPER_SETPOINT.propertyName.equals(property)) {
             return new ChannelInfo[] { UPPER_SETPOINT };
         }
-        if (COOLER_OPERATION.propertyName.equals(property)) {
-            return new ChannelInfo[] { COOLER_OPERATION };
-        }
-        if (FAN_OPERATION.propertyName.equals(property)) {
-            return new ChannelInfo[] { FAN_OPERATION };
-        }
         if (THERMOSTAT_MODE.propertyName.equals(property)) {
             return new ChannelInfo[] { THERMOSTAT_MODE };
-        }
-        if (CONNECTIVITY.propertyName.equals(property)) {
-            return new ChannelInfo[] { CONNECTIVITY };
         }
         return null;
     }
 
     @Override
     public void updateChannels(String interfaceName, List<JsonObject> stateList, UpdateChannelResult result) {
-        QuantityType<Temperature> temperatureValue = null;
-        StringType operationValue = null;
         for (JsonObject state : stateList) {
-            JsonObject value = state.get("value").getAsJsonObject();
+            QuantityType<Temperature> temperatureValue = null;
+            StringType operationValue = null;
+            logger.debug("Updating " + interfaceName + " with state: " + state.toString());
             if (TARGET_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
                 // For groups take the first
                 if (temperatureValue == null) {
+                    JsonObject value = state.get("value").getAsJsonObject();
                     float temperature = value.get("value").getAsFloat();
                     String scale = value.get("scale").getAsString().toUpperCase();
                     if ("CELSIUS".equals(scale)) {
@@ -121,23 +108,15 @@ public class HandlerThermostatController extends HandlerBase {
                     }
                 }
                 updateState(TARGET_SETPOINT.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
-            }
-            if (LOWER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
+            } else if (THERMOSTAT_MODE.propertyName.equals(state.get("name").getAsString())) {
+                // For groups take the first
+                String operation = state.get("value").getAsString().toUpperCase();
+                operationValue = new StringType(operation);
+                updateState(THERMOSTAT_MODE.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
+            } else if (UPPER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
                 // For groups take the first
                 if (temperatureValue == null) {
-                    float temperature = value.get("value").getAsFloat();
-                    String scale = value.get("scale").getAsString().toUpperCase();
-                    if ("CELSIUS".equals(scale)) {
-                        temperatureValue = new QuantityType<Temperature>(temperature, SIUnits.CELSIUS);
-                    } else {
-                        temperatureValue = new QuantityType<Temperature>(temperature, ImperialUnits.FAHRENHEIT);
-                    }
-                }
-                updateState(LOWER_SETPOINT.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
-            }
-            if (UPPER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
-                // For groups take the first
-                if (temperatureValue == null) {
+                    JsonObject value = state.get("value").getAsJsonObject();
                     float temperature = value.get("value").getAsFloat();
                     String scale = value.get("scale").getAsString().toUpperCase();
                     if ("CELSIUS".equals(scale)) {
@@ -147,30 +126,19 @@ public class HandlerThermostatController extends HandlerBase {
                     }
                 }
                 updateState(UPPER_SETPOINT.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
-            }
-            if (COOLER_OPERATION.propertyName.equals(state.get("name").getAsString())) {
+            } else if (LOWER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
                 // For groups take the first
-                String operation = value.get("value").getAsString().toUpperCase();
-                operationValue = new StringType(operation);
-                updateState(COOLER_OPERATION.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
-            }
-            if (FAN_OPERATION.propertyName.equals(state.get("name").getAsString())) {
-                // For groups take the first
-                String operation = value.get("value").getAsString().toUpperCase();
-                operationValue = new StringType(operation);
-                updateState(FAN_OPERATION.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
-            }
-            if (THERMOSTAT_MODE.propertyName.equals(state.get("name").getAsString())) {
-                // For groups take the first
-                String operation = value.get("value").getAsString().toUpperCase();
-                operationValue = new StringType(operation);
-                updateState(THERMOSTAT_MODE.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
-            }
-            if (CONNECTIVITY.propertyName.equals(state.get("name").getAsString())) {
-                // For groups take the first
-                String operation = value.get("value").getAsString().toUpperCase();
-                operationValue = new StringType(operation);
-                updateState(CONNECTIVITY.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
+                if (temperatureValue == null) {
+                    JsonObject value = state.get("value").getAsJsonObject();
+                    float temperature = value.get("value").getAsFloat();
+                    String scale = value.get("scale").getAsString().toUpperCase();
+                    if ("CELSIUS".equals(scale)) {
+                        temperatureValue = new QuantityType<Temperature>(temperature, SIUnits.CELSIUS);
+                    } else {
+                        temperatureValue = new QuantityType<Temperature>(temperature, ImperialUnits.FAHRENHEIT);
+                    }
+                }
+                updateState(LOWER_SETPOINT.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
             }
         }
     }

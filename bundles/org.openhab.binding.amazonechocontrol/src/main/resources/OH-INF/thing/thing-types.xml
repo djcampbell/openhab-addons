@@ -641,4 +641,22 @@
 		<description>Target Setpoint</description>
 		<state pattern="%.1f %unit%"/>
 	</channel-type>
+	<channel-type id="upperSetpoint">
+		<item-type>Number:Temperature</item-type>
+		<label>Upper Setpoint</label>
+		<description>Upper Setpoint</description>
+		<state pattern="%.1f %unit%"/>
+	</channel-type>
+	<channel-type id="lowerSetpoint">
+		<item-type>Number:Temperature</item-type>
+		<label>Lower Setpoint</label>
+		<description>Lower Setpoint</description>
+		<state pattern="%.1f %unit%"/>
+	</channel-type>
+	<channel-type id="thermostatMode">
+		<item-type>String</item-type>
+		<label>Thermostat Mode</label>
+		<description>Thermostat Mode</description>
+		<state pattern="%s"/>
+	</channel-type>
 </thing:thing-descriptions>

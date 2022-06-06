@@ -32,6 +32,8 @@ import org.openhab.core.library.unit.SIUnits;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.StateDescription;
 import org.openhab.core.types.UnDefType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 
@@ -43,6 +45,8 @@ import com.google.gson.JsonObject;
  */
 @NonNullByDefault
 public class HandlerTemperatureSensor extends HandlerBase {
+    // Logger
+    private final Logger logger = LoggerFactory.getLogger(HandlerTemperatureSensor.class);
     // Interface
     public static final String INTERFACE = "Alexa.TemperatureSensor";
     // Channel definitions
@@ -69,8 +73,9 @@ public class HandlerTemperatureSensor extends HandlerBase {
 
     @Override
     public void updateChannels(String interfaceName, List<JsonObject> stateList, UpdateChannelResult result) {
-        QuantityType<Temperature> temperatureValue = null;
         for (JsonObject state : stateList) {
+            QuantityType<Temperature> temperatureValue = null;
+            logger.debug("Updating " + interfaceName + " with state: " + state.toString());
             if (TEMPERATURE.propertyName.equals(state.get("name").getAsString())) {
                 JsonObject value = state.get("value").getAsJsonObject();
                 // For groups take the first
@@ -83,9 +88,9 @@ public class HandlerTemperatureSensor extends HandlerBase {
                         temperatureValue = new QuantityType<Temperature>(temperature, ImperialUnits.FAHRENHEIT);
                     }
                 }
+                updateState(TEMPERATURE.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
             }
         }
-        updateState(TEMPERATURE.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
     }
 
     @Override

@@ -109,6 +109,7 @@ import org.openhab.binding.amazonechocontrol.internal.jsons.JsonWebSiteCookie;
 import org.openhab.binding.amazonechocontrol.internal.jsons.SmartHomeBaseDevice;
 import org.openhab.core.common.ThreadPoolManager;
 import org.openhab.core.library.types.QuantityType;
+import org.openhab.core.library.types.StringType;
 import org.openhab.core.library.unit.SIUnits;
 import org.openhab.core.util.HexUtils;
 import org.slf4j.Logger;
@@ -1181,6 +1182,8 @@ public class Connection {
                 parameters.addProperty(property, (boolean) value);
             } else if (value instanceof String) {
                 parameters.addProperty(property, (String) value);
+            } else if (value instanceof StringType) {
+                parameters.addProperty(property + ".value", value.toString());
             } else if (value instanceof Number) {
                 parameters.addProperty(property, (Number) value);
             } else if (value instanceof Character) {
@@ -1195,6 +1198,7 @@ public class Connection {
 
         String requestBody = json.toString();
         try {
+            logger.info(requestBody);
             String resultBody = makeRequestAndReturnString("PUT", url, requestBody, true, null);
             logger.trace("Request '{}' resulted in '{}", requestBody, resultBody);
             JsonObject result = parseJson(resultBody, JsonObject.class);

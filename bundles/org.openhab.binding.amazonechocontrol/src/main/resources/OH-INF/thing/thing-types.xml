@@ -634,6 +634,13 @@
 		<description>Temperature</description>
 		<state readOnly="true" pattern="%.1f %unit%"/>
 	</channel-type>
+	<!-- Alexa.HumiditySensor -->
+	<channel-type id="humidity">
+		<item-type>Dimmer</item-type>
+		<label>Humidity</label>
+		<description>Humidity</description>
+		<state min="0" max="100" step="1"/>
+	</channel-type>
 	<!-- Alexa.ThermostatController -->
 	<channel-type id="targetSetpoint">
 		<item-type>Number:Temperature</item-type>

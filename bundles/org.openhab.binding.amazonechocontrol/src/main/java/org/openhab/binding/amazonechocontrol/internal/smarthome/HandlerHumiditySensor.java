@@ -18,17 +18,13 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-import javax.measure.quantity.Temperature;
-
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.amazonechocontrol.internal.Connection;
 import org.openhab.binding.amazonechocontrol.internal.handler.SmartHomeDeviceHandler;
 import org.openhab.binding.amazonechocontrol.internal.jsons.JsonSmartHomeCapabilities.SmartHomeCapability;
 import org.openhab.binding.amazonechocontrol.internal.jsons.JsonSmartHomeDevices.SmartHomeDevice;
-import org.openhab.core.library.types.QuantityType;
-import org.openhab.core.library.unit.ImperialUnits;
-import org.openhab.core.library.unit.SIUnits;
+import org.openhab.core.library.types.PercentType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.StateDescription;
 import org.openhab.core.types.UnDefType;
@@ -38,23 +34,22 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonObject;
 
 /**
- * The {@link HandlerTemperatureSensor} is responsible for the Alexa.TemperatureSensorInterface
+ * The {@link HandlerHumiditySensor} is responsible for the Alexa.HumiditySensorInterface
  *
- * @author Lukas Knoeller - Initial contribution
- * @author Michael Geramb - Initial contribution
+ * @author Daniel Campbell - Initial contribution
  */
 @NonNullByDefault
-public class HandlerTemperatureSensor extends HandlerBase {
+public class HandlerHumiditySensor extends HandlerBase {
     // Logger
-    private final Logger logger = LoggerFactory.getLogger(HandlerTemperatureSensor.class);
+    private final Logger logger = LoggerFactory.getLogger(HandlerHumiditySensor.class);
     // Interface
-    public static final String INTERFACE = "Alexa.TemperatureSensor";
+    public static final String INTERFACE = "Alexa.HumiditySensor";
     // Channel definitions
-    private static final ChannelInfo TEMPERATURE = new ChannelInfo("temperature" /* propertyName */ ,
-            "temperature" /* ChannelId */, CHANNEL_TYPE_TEMPERATURE /* Channel Type */ ,
-            ITEM_TYPE_NUMBER_TEMPERATURE /* Item Type */);
+    private static final ChannelInfo HUMIDITY = new ChannelInfo("Humidity" /* propertyName */ ,
+            "Humidity" /* ChannelId */, CHANNEL_TYPE_HUMIDITY /* Channel Type */ ,
+            ITEM_TYPE_NUMBER_HUMIDITY /* Item Type */);
 
-    public HandlerTemperatureSensor(SmartHomeDeviceHandler smartHomeDeviceHandler) {
+    public HandlerHumiditySensor(SmartHomeDeviceHandler smartHomeDeviceHandler) {
         super(smartHomeDeviceHandler);
     }
 
@@ -65,8 +60,8 @@ public class HandlerTemperatureSensor extends HandlerBase {
 
     @Override
     protected ChannelInfo @Nullable [] findChannelInfos(SmartHomeCapability capability, String property) {
-        if (TEMPERATURE.propertyName.equals(property)) {
-            return new ChannelInfo[] { TEMPERATURE };
+        if (HUMIDITY.propertyName.equals(property)) {
+            return new ChannelInfo[] { HUMIDITY };
         }
         return null;
     }
@@ -74,21 +69,15 @@ public class HandlerTemperatureSensor extends HandlerBase {
     @Override
     public void updateChannels(String interfaceName, List<JsonObject> stateList, UpdateChannelResult result) {
         for (JsonObject state : stateList) {
-            QuantityType<Temperature> temperatureValue = null;
+            Integer humidityValue = null;
             logger.debug("Updating " + interfaceName + " with state: " + state.toString());
-            if (TEMPERATURE.propertyName.equals(state.get("name").getAsString())) {
+            if (HUMIDITY.propertyName.equals(state.get("name").getAsString())) {
                 JsonObject value = state.get("value").getAsJsonObject();
-                // For groups take the first
-                if (temperatureValue == null) {
-                    float temperature = value.get("value").getAsFloat();
-                    String scale = value.get("scale").getAsString();
-                    if ("CELSIUS".equals(scale)) {
-                        temperatureValue = new QuantityType<Temperature>(temperature, SIUnits.CELSIUS);
-                    } else {
-                        temperatureValue = new QuantityType<Temperature>(temperature, ImperialUnits.FAHRENHEIT);
-                    }
+                if (humidityValue == null) {
+                    humidityValue = value.get("value").getAsInt();
                 }
-                updateState(TEMPERATURE.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
+                updateState(HUMIDITY.channelId,
+                        humidityValue == null ? UnDefType.UNDEF : new PercentType(humidityValue));
             }
         }
     }

@@ -1174,28 +1174,65 @@ public class Connection {
         JsonObject parameters = new JsonObject();
         parameters.addProperty("action", action);
         if (property != null) {
-            if (value instanceof QuantityType<?>) {
-                parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
-                parameters.addProperty(property + ".scale",
-                        ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
-            } else if (value instanceof Boolean) {
-                parameters.addProperty(property, (boolean) value);
-            } else if (value instanceof String) {
-                parameters.addProperty(property, (String) value);
-            } else if (value instanceof StringType) {
-                parameters.addProperty(property + ".value", value.toString());
-            } else if (value instanceof Number) {
-                parameters.addProperty(property, (Number) value);
-            } else if (value instanceof Character) {
-                parameters.addProperty(property, (Character) value);
-            } else if (value instanceof JsonElement) {
-                parameters.add(property, (JsonElement) value);
+            if (action == "setThermostatMode") {
+                if (value instanceof StringType) {
+                    parameters.addProperty(property + ".value", value.toString());
+                }
+            } else if (action == "setTargetTemperature") {
+                if (property == "targetTemperature") {
+                    logger.info("processing change for " + property);
+                    if (value instanceof QuantityType<?>) {
+                        parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
+                        parameters.addProperty(property + ".scale",
+                                ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
+                    }
+                } else if (property == "lowerSetTemperature") {
+                    logger.info("processing change for " + property);
+                    if (value instanceof QuantityType<?>) {
+                        parameters.addProperty("upperSetTemperature.value",
+                                ((QuantityType<?>) value).floatValue() + 10);
+                        parameters.addProperty("upperSetTemperature.scale",
+                                ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
+                        parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
+                        parameters.addProperty(property + ".scale",
+                                ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
+
+                    }
+                } else if (property == "upperSetTemperature") {
+                    logger.info("processing change for " + property);
+                    if (value instanceof QuantityType<?>) {
+                        parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
+                        parameters.addProperty(property + ".scale",
+                                ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
+                        parameters.addProperty("lowerSetTemperature.value",
+                                ((QuantityType<?>) value).floatValue() - 10);
+                        parameters.addProperty("lowerSetTemperature.scale",
+                                ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
+                    }
+                }
+            } else {
+                if (value instanceof QuantityType<?>) {
+                    parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
+                    parameters.addProperty(property + ".scale",
+                            ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
+                } else if (value instanceof Boolean) {
+                    parameters.addProperty(property, (boolean) value);
+                } else if (value instanceof String) {
+                    parameters.addProperty(property, (String) value);
+                } else if (value instanceof Number) {
+                    parameters.addProperty(property, (Number) value);
+                } else if (value instanceof Character) {
+                    parameters.addProperty(property, (Character) value);
+                } else if (value instanceof JsonElement) {
+                    parameters.add(property, (JsonElement) value);
+                }
             }
         }
         controlRequest.add("parameters", parameters);
         controlRequests.add(controlRequest);
         json.add("controlRequests", controlRequests);
 
+        logger.info(json.toString());
         String requestBody = json.toString();
         try {
             logger.info(requestBody);

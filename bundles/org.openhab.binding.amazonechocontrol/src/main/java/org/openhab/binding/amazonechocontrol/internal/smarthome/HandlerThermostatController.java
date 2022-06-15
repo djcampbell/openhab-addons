@@ -108,12 +108,14 @@ public class HandlerThermostatController extends HandlerBase {
                     }
                 }
                 updateState(TARGET_SETPOINT.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
-            } else if (THERMOSTAT_MODE.propertyName.equals(state.get("name").getAsString())) {
+            }
+            if (THERMOSTAT_MODE.propertyName.equals(state.get("name").getAsString())) {
                 // For groups take the first
                 String operation = state.get("value").getAsString().toUpperCase();
                 operationValue = new StringType(operation);
                 updateState(THERMOSTAT_MODE.channelId, operationValue == null ? UnDefType.UNDEF : operationValue);
-            } else if (UPPER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
+            }
+            if (UPPER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
                 // For groups take the first
                 if (temperatureValue == null) {
                     JsonObject value = state.get("value").getAsJsonObject();
@@ -126,7 +128,8 @@ public class HandlerThermostatController extends HandlerBase {
                     }
                 }
                 updateState(UPPER_SETPOINT.channelId, temperatureValue == null ? UnDefType.UNDEF : temperatureValue);
-            } else if (LOWER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
+            }
+            if (LOWER_SETPOINT.propertyName.equals(state.get("name").getAsString())) {
                 // For groups take the first
                 if (temperatureValue == null) {
                     JsonObject value = state.get("value").getAsJsonObject();
@@ -158,7 +161,7 @@ public class HandlerThermostatController extends HandlerBase {
         if (channelId.equals(LOWER_SETPOINT.channelId)) {
             if (containsCapabilityProperty(capabilities, LOWER_SETPOINT.propertyName)) {
                 if (command instanceof QuantityType) {
-                    connection.smartHomeCommand(entityId, "setLowerSetpoint", "lowerSetpoint", command);
+                    connection.smartHomeCommand(entityId, "setTargetTemperature", "lowerSetTemperature", command);
                     return true;
                 }
             }
@@ -166,7 +169,7 @@ public class HandlerThermostatController extends HandlerBase {
         if (channelId.equals(UPPER_SETPOINT.channelId)) {
             if (containsCapabilityProperty(capabilities, UPPER_SETPOINT.propertyName)) {
                 if (command instanceof QuantityType) {
-                    connection.smartHomeCommand(entityId, "setUpperSetpoint", "upperSetpoint", command);
+                    connection.smartHomeCommand(entityId, "setTargetTemperature", "upperSetTemperature", command);
                     return true;
                 }
             }

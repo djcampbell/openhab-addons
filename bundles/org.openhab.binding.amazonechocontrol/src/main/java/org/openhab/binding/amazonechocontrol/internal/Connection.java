@@ -32,6 +32,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -119,6 +120,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
@@ -1165,6 +1167,8 @@ public class Connection {
     public void smartHomeCommand(String entityId, String action, @Nullable String property, @Nullable Object value)
             throws IOException, InterruptedException {
         String url = alexaServer + "/api/phoenix/state";
+        Float lowerSetpoint = Float.valueOf(60);
+        Float upperSetpoint = Float.valueOf(80);
 
         JsonObject json = new JsonObject();
         JsonArray controlRequests = new JsonArray();
@@ -1180,17 +1184,49 @@ public class Connection {
                 }
             } else if (action == "setTargetTemperature") {
                 if (property == "targetTemperature") {
-                    logger.info("processing change for " + property);
                     if (value instanceof QuantityType<?>) {
                         parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
                         parameters.addProperty(property + ".scale",
                                 ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
                     }
                 } else if (property == "lowerSetTemperature") {
-                    logger.info("processing change for " + property);
+                    Map<String, JsonArray> devices = null;
+                    try {
+                        devices = getSmartHomeDeviceStatesJson(new HashSet<>(getSmarthomeDeviceList()));
+                    } catch (URISyntaxException e) {
+                        logger.error(e.toString());
+                    }
+                    Object applianceId = "AAA_SonarCloudService_00QAbw7vzYhdndv3-Sirp40Zargm3orQ0tKQK9sIKbqIM6-rFm3KsAnOKWApPNqtmzGL6cOR30mQrIwEQtDA";
+                    JsonArray states = devices.get(applianceId);
+                    for (JsonElement stateElement : states) {
+                        JsonObject stateValue = new JsonObject();
+                        String stateJson = stateElement.getAsString();
+                        if (stateJson.startsWith("{") && stateJson.endsWith("}")) {
+                            JsonObject state = Objects.requireNonNull(gson.fromJson(stateJson, JsonObject.class));
+                            String interfaceName = Objects.requireNonNullElse(state.get("namespace"), JsonNull.INSTANCE)
+                                    .getAsString();
+                            String name = Objects.requireNonNullElse(state.get("name"), JsonNull.INSTANCE)
+                                    .getAsString();
+                            if (interfaceName.equals("Alexa.ThermostatController")) {
+                                if (name.equals("upperSetpoint")) {
+                                    stateValue = Objects.requireNonNullElse(state.get("value"), JsonNull.INSTANCE)
+                                            .getAsJsonObject();
+                                    upperSetpoint = Objects
+                                            .requireNonNullElse(stateValue.get("value"), JsonNull.INSTANCE)
+                                            .getAsFloat();
+                                } else if (name.equals("lowerSetpoint")) {
+                                    stateValue = Objects.requireNonNullElse(state.get("value"), JsonNull.INSTANCE)
+                                            .getAsJsonObject();
+                                    lowerSetpoint = Objects
+                                            .requireNonNullElse(stateValue.get("value"), JsonNull.INSTANCE)
+                                            .getAsFloat();
+                                }
+                            }
+                        }
+                    }
+
                     if (value instanceof QuantityType<?>) {
-                        parameters.addProperty("upperSetTemperature.value",
-                                ((QuantityType<?>) value).floatValue() + 10);
+                        parameters.addProperty("upperSetTemperature.value", upperSetpoint);
                         parameters.addProperty("upperSetTemperature.scale",
                                 ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
                         parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
@@ -1199,13 +1235,11 @@ public class Connection {
 
                     }
                 } else if (property == "upperSetTemperature") {
-                    logger.info("processing change for " + property);
                     if (value instanceof QuantityType<?>) {
                         parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
                         parameters.addProperty(property + ".scale",
                                 ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
-                        parameters.addProperty("lowerSetTemperature.value",
-                                ((QuantityType<?>) value).floatValue() - 10);
+                        parameters.addProperty("lowerSetTemperature.value", lowerSetpoint);
                         parameters.addProperty("lowerSetTemperature.scale",
                                 ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
                     }
@@ -1232,10 +1266,8 @@ public class Connection {
         controlRequests.add(controlRequest);
         json.add("controlRequests", controlRequests);
 
-        logger.info(json.toString());
         String requestBody = json.toString();
         try {
-            logger.info(requestBody);
             String resultBody = makeRequestAndReturnString("PUT", url, requestBody, true, null);
             logger.trace("Request '{}' resulted in '{}", requestBody, resultBody);
             JsonObject result = parseJson(resultBody, JsonObject.class);

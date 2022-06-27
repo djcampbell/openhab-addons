@@ -1077,7 +1077,7 @@ public class Connection {
         requestObject.add("stateRequests", stateRequests);
         String requestBody = requestObject.toString();
         String json = makeRequestAndReturnString("POST", alexaServer + "/api/phoenix/state", requestBody, true, null);
-        logger.trace("Requested {} and received {}", requestBody, json);
+        logger.debug("Requested {} and received {}", requestBody, json);
 
         JsonObject responseObject = Objects.requireNonNull(gson.fromJson(json, JsonObject.class));
         JsonArray deviceStates = (JsonArray) responseObject.get("deviceStates");
@@ -1168,7 +1168,7 @@ public class Connection {
             throws IOException, InterruptedException {
         String url = alexaServer + "/api/phoenix/state";
         Float lowerSetpoint = Float.valueOf(60);
-        Float upperSetpoint = Float.valueOf(80);
+        Float upperSetpoint = Float.valueOf(85);
 
         JsonObject json = new JsonObject();
         JsonArray controlRequests = new JsonArray();
@@ -1189,7 +1189,7 @@ public class Connection {
                         parameters.addProperty(property + ".scale",
                                 ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
                     }
-                } else if (property == "lowerSetTemperature") {
+                } else {
                     Map<String, JsonArray> devices = null;
                     try {
                         devices = getSmartHomeDeviceStatesJson(new HashSet<>(getSmarthomeDeviceList()));
@@ -1221,27 +1221,34 @@ public class Connection {
                                             .requireNonNullElse(stateValue.get("value"), JsonNull.INSTANCE)
                                             .getAsFloat();
                                 }
+                                if (lowerSetpoint > 60 && upperSetpoint < 85) {
+                                    break;
+                                }
                             }
                         }
                     }
-
-                    if (value instanceof QuantityType<?>) {
-                        parameters.addProperty("upperSetTemperature.value", upperSetpoint);
-                        parameters.addProperty("upperSetTemperature.scale",
-                                ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
-                        parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
-                        parameters.addProperty(property + ".scale",
-                                ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
-
-                    }
-                } else if (property == "upperSetTemperature") {
-                    if (value instanceof QuantityType<?>) {
-                        parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
-                        parameters.addProperty(property + ".scale",
-                                ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
-                        parameters.addProperty("lowerSetTemperature.value", lowerSetpoint);
-                        parameters.addProperty("lowerSetTemperature.scale",
-                                ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius" : "fahrenheit");
+                    if (property == "lowerSetTemperature") {
+                        if (value instanceof QuantityType<?>) {
+                            parameters.addProperty("upperSetTemperature.value", upperSetpoint);
+                            parameters.addProperty("upperSetTemperature.scale",
+                                    ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius"
+                                            : "fahrenheit");
+                            parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
+                            parameters.addProperty(property + ".scale",
+                                    ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius"
+                                            : "fahrenheit");
+                        }
+                    } else if (property == "upperSetTemperature") {
+                        if (value instanceof QuantityType<?>) {
+                            parameters.addProperty(property + ".value", ((QuantityType<?>) value).floatValue());
+                            parameters.addProperty(property + ".scale",
+                                    ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius"
+                                            : "fahrenheit");
+                            parameters.addProperty("lowerSetTemperature.value", lowerSetpoint);
+                            parameters.addProperty("lowerSetTemperature.scale",
+                                    ((QuantityType<?>) value).getUnit().equals(SIUnits.CELSIUS) ? "celsius"
+                                            : "fahrenheit");
+                        }
                     }
                 }
             } else {

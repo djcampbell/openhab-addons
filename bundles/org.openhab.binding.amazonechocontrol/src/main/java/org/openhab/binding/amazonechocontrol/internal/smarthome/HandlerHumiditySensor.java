@@ -13,10 +13,13 @@
 package org.openhab.binding.amazonechocontrol.internal.smarthome;
 
 import static org.openhab.binding.amazonechocontrol.internal.smarthome.Constants.*;
+import static org.openhab.core.library.unit.Units.*;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+
+import javax.measure.Unit;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -24,8 +27,9 @@ import org.openhab.binding.amazonechocontrol.internal.Connection;
 import org.openhab.binding.amazonechocontrol.internal.handler.SmartHomeDeviceHandler;
 import org.openhab.binding.amazonechocontrol.internal.jsons.JsonSmartHomeCapabilities.SmartHomeCapability;
 import org.openhab.binding.amazonechocontrol.internal.jsons.JsonSmartHomeDevices.SmartHomeDevice;
-import org.openhab.core.library.types.PercentType;
+import org.openhab.core.library.types.QuantityType;
 import org.openhab.core.types.Command;
+import org.openhab.core.types.State;
 import org.openhab.core.types.StateDescription;
 import org.openhab.core.types.UnDefType;
 import org.slf4j.Logger;
@@ -45,9 +49,9 @@ public class HandlerHumiditySensor extends HandlerBase {
     // Interface
     public static final String INTERFACE = "Alexa.HumiditySensor";
     // Channel definitions
-    private static final ChannelInfo HUMIDITY = new ChannelInfo("Humidity" /* propertyName */ ,
-            "Humidity" /* ChannelId */, CHANNEL_TYPE_HUMIDITY /* Channel Type */ ,
-            ITEM_TYPE_NUMBER_HUMIDITY /* Item Type */);
+    private static final ChannelInfo HUMIDITY = new ChannelInfo("relativeHumidity" /* propertyName */ ,
+            "relativeHumidity" /* ChannelId */, CHANNEL_TYPE_HUMIDITY /* Channel Type */ ,
+            ITEM_TYPE_HUMIDITY /* Item Type */);
 
     public HandlerHumiditySensor(SmartHomeDeviceHandler smartHomeDeviceHandler) {
         super(smartHomeDeviceHandler);
@@ -69,17 +73,21 @@ public class HandlerHumiditySensor extends HandlerBase {
     @Override
     public void updateChannels(String interfaceName, List<JsonObject> stateList, UpdateChannelResult result) {
         for (JsonObject state : stateList) {
-            Integer humidityValue = null;
+            State humidityValue = null;
             logger.debug("Updating " + interfaceName + " with state: " + state.toString());
             if (HUMIDITY.propertyName.equals(state.get("name").getAsString())) {
-                JsonObject value = state.get("value").getAsJsonObject();
+                // For groups take the first
                 if (humidityValue == null) {
-                    humidityValue = value.get("value").getAsInt();
+                    // humidityValue = state.get("value").getAsInt();
+                    humidityValue = getQuantityTypeState(state.get("value").getAsInt(), PERCENT);
+                    updateState(HUMIDITY.channelId, humidityValue == null ? UnDefType.UNDEF : humidityValue);
                 }
-                updateState(HUMIDITY.channelId,
-                        humidityValue == null ? UnDefType.UNDEF : new PercentType(humidityValue));
             }
         }
+    }
+
+    protected State getQuantityTypeState(@Nullable Number value, Unit<?> unit) {
+        return (value == null) ? UnDefType.UNDEF : new QuantityType<>(value, unit);
     }
 
     @Override
